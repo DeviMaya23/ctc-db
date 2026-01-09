@@ -1,1 +1,1 @@
-# cotc-db
+# ctc-db
