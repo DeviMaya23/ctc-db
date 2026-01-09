@@ -1,2 +1,4 @@
 compose.yaml
 liquibase.properties
+
+ignore/*
