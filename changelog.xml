@@ -17,6 +17,7 @@
 	<include file="changeset/0005-rename-tr_traveller-to-m_traveller.sql"/>
 	<include file="changeset/0006-create-table-m_accessory.sql"/>
 	<include file="changeset/0007-alter-table-m_traveller-add-accessory.sql"/>
+	<include file="changeset/0008-alter-table-m_accessory-stats-not-null.sql"/>
 
 
 </databaseChangeLog>
