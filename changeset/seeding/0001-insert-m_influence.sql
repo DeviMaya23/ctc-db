@@ -1,18 +1,18 @@
 INSERT INTO public.m_influence
-("name")
-VALUES('Wealth');
+("name", "created_at", "created_by")
+VALUES('Wealth', NOW(), 'seed');
 INSERT INTO public.m_influence
-("name")
-VALUES('Power');
+("name", "created_at", "created_by")
+VALUES('Power', NOW(), 'seed');
 INSERT INTO public.m_influence
-("name")
-VALUES('Fame');
+("name", "created_at", "created_by")
+VALUES('Fame', NOW(), 'seed');
 INSERT INTO public.m_influence
-("name")
-VALUES('Opulence');
+("name", "created_at", "created_by")
+VALUES('Opulence', NOW(), 'seed');
 INSERT INTO public.m_influence
-("name")
-VALUES('Dominance');
+("name", "created_at", "created_by")
+VALUES('Dominance', NOW(), 'seed');
 INSERT INTO public.m_influence
-("name")
-VALUES('Prestige');
+("name", "created_at", "created_by")
+VALUES('Prestige', NOW(), 'seed');
