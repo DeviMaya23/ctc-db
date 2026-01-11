@@ -1,3 +1,9 @@
+--liquibase formatted sql
+
+--changeset devi:seeding-0001 label:v1.0.5
+
+--comment: postgresql
+
 INSERT INTO public.m_influence
 ("name", "created_at", "created_by")
 VALUES('Wealth', NOW(), 'seed');
