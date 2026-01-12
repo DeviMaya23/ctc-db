@@ -20,6 +20,7 @@
 	<include file="changeset/0008-alter-table-m_accessory-stats-not-null.sql"/>
 	<include file="changeset/0009-create-table-m_job.sql"/>
 	<include file="changeset/0010-alter-table-m_traveller.sql"/>
+	<include file="changeset/0011-alter-table-m_traveller.sql"/>
 
 	<!-- Seeding Data -->
 	<include file="changeset/seeding/changelog.xml"/>
