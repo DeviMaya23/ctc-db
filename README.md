@@ -16,12 +16,13 @@ erDiagram
     
     M_TRAVELLER {
         int id PK
-        string name
+        string name UK "unique"
         int rarity
         int influence_id FK
         date release_date
         string job
         int accessory_id FK
+        string banner
     }
     
     M_USER {

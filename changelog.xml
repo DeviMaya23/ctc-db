@@ -21,6 +21,7 @@
 	<include file="changeset/0009-create-table-m_job.sql"/>
 	<include file="changeset/0010-alter-table-m_traveller.sql"/>
 	<include file="changeset/0011-alter-table-m_traveller.sql"/>
+	<include file="changeset/0012-alter-table-m_traveller-unique-name.sql"/>
 
 	<!-- Seeding Data -->
 	<include file="changeset/seeding/changelog.xml"/>
