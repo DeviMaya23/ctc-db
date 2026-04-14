@@ -1,0 +1,96 @@
+name: Run Database Migrations
+
+on:
+  workflow_dispatch:  # Manual trigger for now
+
+env:
+  AWS_REGION: ap-southeast-2
+  ECR_REPOSITORY: ctc-migrations
+  ECS_CLUSTER: ctc-cluster
+  ECS_TASK_DEFINITION: ctc-migrations-task
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build and push migration image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Run migration task on ECS
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image }}
+        run: |
+          # Get subnet and security group from existing service
+          NETWORK_CONFIG=$(aws ecs describe-services \
+            --cluster $ECS_CLUSTER \
+            --services ctc-api-service \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration' \
+            --output json)
+          
+          SUBNETS=$(echo $NETWORK_CONFIG | jq -r '.subnets | join(",")')
+          SECURITY_GROUPS=$(echo $NETWORK_CONFIG | jq -r '.securityGroups | join(",")')
+          
+          # Run migration task
+          TASK_ARN=$(aws ecs run-task \
+            --cluster $ECS_CLUSTER \
+            --task-definition $ECS_TASK_DEFINITION \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=ENABLED}" \
+            --overrides "{
+              \"containerOverrides\": [{
+                \"name\": \"migrations\",
+                \"environment\": [
+                  {\"name\": \"DATABASE_URL\", \"value\": \"${{ secrets.DATABASE_URL }}\"},
+                  {\"name\": \"DATABASE_USER\", \"value\": \"${{ secrets.DATABASE_USER }}\"},
+                  {\"name\": \"DATABASE_PASSWORD\", \"value\": \"${{ secrets.DATABASE_PASSWORD }}\"}
+                ]
+              }]
+            }" \
+            --query 'tasks[0].taskArn' \
+            --output text)
+          
+          echo "Started migration task: $TASK_ARN"
+          
+          # Wait for task to complete
+          echo "Waiting for migration to complete..."
+          aws ecs wait tasks-stopped --cluster $ECS_CLUSTER --tasks $TASK_ARN
+          
+          # Check exit code
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster $ECS_CLUSTER \
+            --tasks $TASK_ARN \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+          
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "❌ Migration failed with exit code $EXIT_CODE"
+            echo "Check logs at: https://ap-southeast-2.console.aws.amazon.com/cloudwatch/home?region=ap-southeast-2#logsV2:log-groups/log-group//ecs/ctc-migrations"
+            exit 1
+          fi
+          
+          echo "✅ Migration completed successfully"
